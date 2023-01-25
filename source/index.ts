@@ -7,7 +7,7 @@ import { join } from 'path';
 import { PuppeteerNode, Viewport } from 'puppeteer-core';
 import { URL } from 'url';
 
-if (/^AWS_Lambda_nodejs(?:10|12|14)[.]x$/.test(process.env.AWS_EXECUTION_ENV) === true) {
+if (/^AWS_Lambda_nodejs(?:10|12|14|16|18)[.]x$/.test(process.env.AWS_EXECUTION_ENV) === true) {
   if (process.env.FONTCONFIG_PATH === undefined) {
     process.env.FONTCONFIG_PATH = '/tmp/aws';
   }
@@ -102,9 +102,9 @@ class Chromium {
       '--disable-setuid-sandbox', // https://source.chromium.org/search?q=lang:cpp+symbol:kDisableSetuidSandbox&ss=chromium
       '--disable-site-isolation-trials', // https://source.chromium.org/search?q=lang:cpp+symbol:kDisableSiteIsolation&ss=chromium
       '--disable-speech-api', // https://source.chromium.org/search?q=lang:cpp+symbol:kDisableSpeechAPI&ss=chromium
-      '--disable-web-security', // https://source.chromium.org/search?q=lang:cpp+symbol:kDisableWebSecurity&ss=chromium
       '--disk-cache-size=33554432', // https://source.chromium.org/search?q=lang:cpp+symbol:kDiskCacheSize&ss=chromium
       '--enable-features=SharedArrayBuffer', // https://source.chromium.org/search?q=file:content_features.cc&ss=chromium
+      '--font-render-hinting=none', // https://source.chromium.org/search?q=lang:cpp+symbol:kFontRenderHinting&sq=&ss=chromium
       '--hide-scrollbars', // https://source.chromium.org/search?q=lang:cpp+symbol:kHideScrollbars&ss=chromium
       '--ignore-gpu-blocklist', // https://source.chromium.org/search?q=lang:cpp+symbol:kIgnoreGpuBlocklist&ss=chromium
       '--in-process-gpu', // https://source.chromium.org/search?q=lang:cpp+symbol:kInProcessGPU&ss=chromium
@@ -160,10 +160,7 @@ class Chromium {
     }
 
     const input = join(__dirname, '..', 'bin');
-    const promises = [
-      LambdaFS.inflate(`${input}/chromium.br`),
-      LambdaFS.inflate(`${input}/swiftshader.tar.br`),
-    ];
+    const promises = [LambdaFS.inflate(`${input}/chromium.br`), LambdaFS.inflate(`${input}/swiftshader.tar.br`)];
 
     if (/^AWS_Lambda_nodejs(?:10|12|14)[.]x$/.test(process.env.AWS_EXECUTION_ENV) === true) {
       promises.push(LambdaFS.inflate(`${input}/aws.tar.br`));
@@ -181,12 +178,7 @@ class Chromium {
       return false;
     }
 
-    const environments = [
-      'AWS_LAMBDA_FUNCTION_NAME',
-      'FUNCTION_NAME',
-      'FUNCTION_TARGET',
-      'FUNCTIONS_EMULATOR',
-    ];
+    const environments = ['AWS_LAMBDA_FUNCTION_NAME', 'FUNCTION_NAME', 'FUNCTION_TARGET', 'FUNCTIONS_EMULATOR'];
 
     return environments.some((key) => process.env[key] !== undefined);
   }
@@ -201,7 +193,7 @@ class Chromium {
 
     try {
       return require('puppeteer');
-    } catch (error) {
+    } catch (error: any) {
       if (error.code !== 'MODULE_NOT_FOUND') {
         throw error;
       }
